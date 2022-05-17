@@ -18,7 +18,7 @@ const OnDayPriceSummary: FC<IOnDayPriceSummaryProps> = ({ symbol }) => {
 			return;
 		}
 
-		fetchData<Quote>(() => client.getQuote(symbol), setData);
+		fetchData<Quote>(() => client.getQuote(symbol), setData, 10000);
 	}, [client, symbol]);
 
 	return (

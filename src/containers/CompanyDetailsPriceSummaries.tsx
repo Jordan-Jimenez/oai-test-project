@@ -20,7 +20,7 @@ const CompanyDetailsPriceSummaries = React.memo(() => {
 			return;
 		}
 
-		fetchData<Quote>(() => client.getQuote(symbol), setQuote);
+		fetchData<Quote>(() => client.getQuote(symbol), setQuote, 10000);
 	}, [client, symbol]);
 
 	const realTimePrice = useMemo(
