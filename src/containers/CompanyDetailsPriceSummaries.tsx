@@ -1,47 +1,62 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { FC, useMemo } from "react";
 
-import { useParams } from "react-router-dom";
+import Box from "@mui/material/Box/Box";
+import { useQuery } from "react-query";
 
 import LabeledValue from "../components/LabeledValue";
 import PriceSummary from "../components/PriceSummary";
 import { useIex } from "../context/IEXProvider";
-import fetchData from "../core/utils/fetchData";
 import HistoricalPriceChange from "./HistoricalPriceChange";
 
-const CompanyDetailsPriceSummaries = React.memo(() => {
-	const { symbol } = useParams();
+interface ICompanyDetailsPriceSummaries {
+	symbol?: string;
+}
 
-	const [quote, setQuote] = useState<Quote | undefined>();
+const CompanyDetailsPriceSummaries: FC<ICompanyDetailsPriceSummaries> =
+	React.memo(({ symbol }) => {
+		const client = useIex();
 
-	const client = useIex();
+		const { data, isLoading } = useQuery(
+			`getOnDayChange:${symbol}`,
+			() => client.getQuote(symbol!),
+			{
+				enabled: !!symbol,
+				refetchInterval: 10000,
+				cacheTime: 0,
+			}
+		);
 
-	useEffect(() => {
-		if (!symbol) {
-			return;
-		}
+		const quote = useMemo(() => {
+			if (!data?.data) {
+				return undefined;
+			}
 
-		fetchData<Quote>(() => client.getQuote(symbol), setQuote, 10000);
-	}, [client, symbol]);
+			return JSON.parse(data?.data) as Quote | undefined;
+		}, [data?.data]);
 
-	const realTimePrice = useMemo(
-		() => quote?.iexRealtimePrice,
-		[quote?.iexRealtimePrice]
-	);
+		return (
+			<>
+				<PriceSummary
+					price={quote?.iexRealtimePrice}
+					changeDollar={quote?.change}
+					changePercent={quote?.changePercent}
+					loading={isLoading}
+				/>
 
-	return (
-		<>
-			<PriceSummary
-				price={quote?.iexRealtimePrice}
-				changeDollar={quote?.change}
-				changePercent={quote?.changePercent}
-			/>
-
-			<LabeledValue
-				label="1YR Change"
-				valueComponent={<HistoricalPriceChange realTimePrice={realTimePrice} />}
-			/>
-		</>
-	);
-});
+				<Box mt={6}>
+					<LabeledValue
+						label="1YR Change"
+						valueComponent={
+							<HistoricalPriceChange
+								realTimePrice={quote?.iexRealtimePrice}
+								parentLoading={isLoading}
+								symbol={symbol}
+							/>
+						}
+					/>
+				</Box>
+			</>
+		);
+	});
 
 export default CompanyDetailsPriceSummaries;

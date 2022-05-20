@@ -1,56 +1,56 @@
-import React, { FC, useEffect, useMemo, useState } from "react";
+import React, { FC, useMemo } from "react";
 
-import { useParams } from "react-router-dom";
+import { useQuery } from "react-query";
 
 import PriceSummary from "../components/PriceSummary";
 import { useIex } from "../context/IEXProvider";
-import fetchData from "../core/utils/fetchData";
+import getPercentDifference from "../core/domain/getPercentDifference";
+import getValueDifference from "../core/domain/getValueDifference";
 
 interface IHistoricalPriceChangeProps {
 	realTimePrice?: number;
+	symbol?: string;
+	parentLoading?: boolean;
 }
 
 const HistoricalPriceChange: FC<IHistoricalPriceChangeProps> = React.memo(
-	({ realTimePrice = 0 }) => {
-		const { symbol } = useParams();
-
-		const [historicalPrices, setHistoricalPrices] = useState<
-			HistoricalPrice[] | undefined
-		>();
-
+	({ realTimePrice = 0, symbol, parentLoading = false }) => {
 		const client = useIex();
 
-		useEffect(() => {
-			if (!symbol) {
-				return;
+		const { data, isLoading } = useQuery(
+			`getHistoricalPrices:${symbol}`,
+			() => client.getHistoricalPrices(symbol!),
+			{
+				enabled: !!symbol,
+				cacheTime: 10 * 60 * 1000,
+				staleTime: 10 * 60 * 1000,
+			}
+		);
+
+		const historicalPrices = useMemo(() => {
+			if (!data?.data) {
+				return undefined;
 			}
 
-			fetchData<HistoricalPrice[]>(
-				() => client.getHistoricalPrices(symbol),
-				setHistoricalPrices
-			);
-		}, [client, symbol]);
+			return JSON.parse(data?.data) as HistoricalPrice[] | undefined;
+		}, [data?.data]);
 
-		const changeDollar = useMemo(() => {
-			if (!historicalPrices || !historicalPrices[0].close) {
-				return 0;
-			}
-
-			return realTimePrice - historicalPrices[0].close;
-		}, [realTimePrice, historicalPrices]);
-
-		const changePercent = useMemo(() => {
-			if (!historicalPrices || !historicalPrices[0].close) {
-				return 0;
-			}
-
-			return (
-				(realTimePrice - historicalPrices[0].close) / historicalPrices[0].close
-			);
+		const change = useMemo(() => {
+			return {
+				dollar:
+					getValueDifference(realTimePrice, historicalPrices?.[0].close) || 0,
+				percent:
+					getPercentDifference(realTimePrice, historicalPrices?.[0].close) || 0,
+			};
 		}, [realTimePrice, historicalPrices]);
 
 		return (
-			<PriceSummary changeDollar={changeDollar} changePercent={changePercent} />
+			<PriceSummary
+				changeDollar={change.dollar}
+				changePercent={change.percent}
+				changeOnly
+				loading={parentLoading || isLoading}
+			/>
 		);
 	}
 );

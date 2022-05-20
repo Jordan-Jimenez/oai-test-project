@@ -1,23 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
+
+import { useQuery } from "react-query";
 
 import CompanyMarketSummary from "../containers/CompanyMarketSummary";
 import { useIex } from "../context/IEXProvider";
-import fetchData from "../core/utils/fetchData";
 
 const CompaniesPage = React.memo(() => {
-	const [data, setData] = useState<Quote[] | undefined>();
-
 	const client = useIex();
 
-	useEffect(() => {
-		fetchData<Quote[]>(() => client.getTopMarketCap(), setData);
-	}, [client]);
+	const { data, isLoading } = useQuery(
+		"getTopMarketCap",
+		() => client.getTopMarketCap(),
+		{
+			staleTime: 30 * 60 * 1000,
+			cacheTime: 30 * 60 * 1000,
+		}
+	);
+
+	const companies = useMemo(() => {
+		if (!data?.data) {
+			return undefined;
+		}
+
+		return JSON.parse(data?.data) as Quote[] | undefined;
+	}, [data]);
 
 	return (
 		<>
-			{data?.map((q, i) => (
-				<CompanyMarketSummary key={q.symbol} quote={q} listIndex={i} />
-			))}
+			{isLoading
+				? [...Array(10)].map(() => <CompanyMarketSummary loading={isLoading} />)
+				: companies
+						?.slice(0, 2)
+						.map((q) => <CompanyMarketSummary key={q.symbol} quote={q} />)}
 		</>
 	);
 });

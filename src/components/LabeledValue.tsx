@@ -1,5 +1,7 @@
 import React, { FC } from "react";
 
+import { Box, Typography } from "@mui/material";
+
 interface ILabeledValueProps {
 	label?: string;
 	value?: string | number;
@@ -9,30 +11,15 @@ interface ILabeledValueProps {
 const LabeledValue: FC<ILabeledValueProps> = React.memo(
 	({ label, value, valueComponent }) => {
 		return (
-			<div style={styles.container}>
-				<h5 style={styles.label}>{label}</h5>
+			<Box mb={4}>
+				<Typography variant="subtitle2">{label}</Typography>
 
-				<h5 style={styles.value}>{value}</h5>
+				<Typography variant="h3">{value}</Typography>
 
 				{valueComponent}
-			</div>
+			</Box>
 		);
 	}
 );
-
-const styles = {
-	label: {
-		color: "#A0A0A0",
-		fontWeight: 400,
-		margin: 0,
-	},
-	value: {
-		fontWeight: 700,
-		margin: 0,
-	},
-	container: {
-		marginBottom: "35px",
-	},
-} as { [key: string]: React.CSSProperties };
 
 export default LabeledValue;

@@ -1,38 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 
 import { useParams } from "react-router-dom";
+import { useQuery } from "react-query";
+import makeStyles from "@mui/styles/makeStyles/makeStyles";
 
 import LabeledValue from "../components/LabeledValue";
 import { useIex } from "../context/IEXProvider";
-import fetchData from "../core/utils/fetchData";
 import CompanyDetailsPriceSummaries from "../containers/CompanyDetailsPriceSummaries";
 import CompanyDetailsHeader from "../containers/CompanyDetailsHeader";
 
+const useStyles = makeStyles({
+	container: {
+		padding: "20px",
+	},
+});
+
 const CompanyPage = React.memo(() => {
+	const style = useStyles();
+
 	const { symbol } = useParams();
 
 	const client = useIex();
 
-	const [company, setCompany] = useState<Company | undefined>();
-
-	useEffect(() => {
-		if (!symbol) {
-			return;
+	const { data, isLoading } = useQuery(
+		`getCompany:${symbol}`,
+		() => client.getCompany(symbol!),
+		{
+			enabled: !!symbol,
+			cacheTime: 10 * 60 * 1000,
+			staleTime: 10 * 60 * 1000,
 		}
+	);
 
-		fetchData<Company>(() => client.getCompany(symbol), setCompany);
-	}, [client, symbol]);
+	const company = useMemo(() => {
+		if (!data?.data) {
+			return undefined;
+		}
+		return JSON.parse(data?.data) as Company | undefined;
+	}, [data]);
 
 	return (
-		<div style={styles.container}>
+		<div className={style.container}>
 			<CompanyDetailsHeader
 				companyName={company?.companyName}
 				symbol={company?.symbol}
+				loading={isLoading}
 			/>
 
-			<CompanyDetailsPriceSummaries />
-
-			<div style={styles.spacing} />
+			<CompanyDetailsPriceSummaries symbol={symbol} />
 
 			<LabeledValue label="CEO" value={company?.CEO} />
 
@@ -42,16 +57,5 @@ const CompanyPage = React.memo(() => {
 		</div>
 	);
 });
-
-const styles = {
-	container: {
-		height: "calc(100% - 40px)",
-		width: "calc(100% - 40px",
-		padding: "20px",
-	},
-	spacing: {
-		marginTop: "50px",
-	},
-} as { [key: string]: React.CSSProperties };
 
 export default CompanyPage;

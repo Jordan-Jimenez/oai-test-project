@@ -1,52 +1,12 @@
 import React, { FC } from "react";
 
-interface IPriceSummaryProps {
-	price?: number;
-	changeDollar?: number;
-	changePercent?: number;
-	position?: "flex-end" | "flex-start";
-}
+import { Skeleton, Typography } from "@mui/material";
+import makeStyles from "@mui/styles/makeStyles/makeStyles";
+import { Theme } from "@mui/material/styles";
+import Box from "@mui/system/Box/Box";
 
-const PriceSummary: FC<IPriceSummaryProps> = React.memo(
-	({ price, changeDollar = 0, changePercent = 0, position = "flex-start" }) => {
-		const styles = makeStyles({
-			changePercent,
-			position,
-			hasPrice: !!price,
-		});
-
-		return (
-			<div id="price-summary" style={styles.priceSummary}>
-				{price && (
-					<p id="price" style={styles.textLarge}>
-						{price}
-					</p>
-				)}
-
-				<div id="price-change-summary" style={styles.priceChangeSummary}>
-					<p
-						id="change-dollar"
-						style={price ? styles.subtitle : styles.textLarge}
-					>
-						{"$" + changeDollar.toFixed(2)}
-					</p>
-
-					<div id="spacing" style={styles.spacing}>
-						<p
-							id="change-percent"
-							style={price ? styles.subtitle : styles.textLarge}
-						>
-							{" (" +
-								(changePercent > 0 ? "+" : "") +
-								((changePercent || 0) * 100).toFixed(2) +
-								")"}
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
-);
+import formatChangePercent from "../core/domain/formatChangePercent";
+import formatChangeDollar from "../core/domain/formatChangeDollar";
 
 interface IStyleProps {
 	changePercent: number;
@@ -54,31 +14,75 @@ interface IStyleProps {
 	hasPrice: boolean;
 }
 
-const makeStyles = (props: IStyleProps) =>
+const useStyles = makeStyles<Theme, IStyleProps>({
+	priceSummary: {
+		display: "flex",
+		flexDirection: "column",
+		color: (props) => (props.changePercent > 0 ? "#00C920" : "red"),
+	},
+	priceChangeSummary: {
+		display: "flex",
+		flexDirection: "row",
+		marginTop: "0px",
+	},
+});
+
+interface IPriceSummaryProps {
+	price?: number;
+	changeOnly?: boolean;
+	changeDollar?: number;
+	changePercent?: number;
+	position?: "flex-end" | "flex-start";
+	loading?: boolean;
+}
+
+const PriceSummary: FC<IPriceSummaryProps> = React.memo(
 	({
-		priceSummary: {
-			display: "flex",
-			flexDirection: "column",
-			alignItems: props.position,
-			color: props.changePercent > 0 ? "#00C920" : "red",
-		},
-		textLarge: {
-			fontSize: props.hasPrice ? "18px" : "24px",
-			margin: 0,
-			fontWeight: 700,
-		},
-		priceChangeSummary: {
-			display: "flex",
-			flexDirection: "row",
-			marginTop: "0px",
-		},
-		spacing: {
-			marginLeft: "5px",
-		},
-		subtitle: {
-			fontSize: "12px",
-			margin: 0,
-		},
-	} as { [key: string]: React.CSSProperties });
+		price = 0,
+		changeDollar = 0,
+		changePercent = 0,
+		position = "flex-start",
+		changeOnly = false,
+		loading = false,
+	}) => {
+		const styles = useStyles({
+			changePercent,
+			position,
+			hasPrice: !!price,
+		});
+
+		return (
+			<Box
+				className={styles.priceSummary}
+				alignItems={position}
+				color={changePercent > 0 ? "#00C920" : "red"}
+			>
+				{!changeOnly && (
+					<Typography variant="h1">
+						{loading ? <Skeleton width={100} /> : `$${price?.toFixed(2)}`}
+					</Typography>
+				)}
+
+				<div className={styles.priceChangeSummary}>
+					<Typography variant={price ? "caption" : "h3"}>
+						{loading ? (
+							<Skeleton width={75} />
+						) : (
+							`${formatChangeDollar(changeDollar)}`
+						)}
+					</Typography>
+
+					<Typography ml={0.5} variant={price ? "caption" : "h3"}>
+						{loading ? (
+							<Skeleton width={75} />
+						) : (
+							`${formatChangePercent(changePercent)}`
+						)}
+					</Typography>
+				</div>
+			</Box>
+		);
+	}
+);
 
 export default PriceSummary;
