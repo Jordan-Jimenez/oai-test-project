@@ -3,6 +3,6 @@ interface HistoricalPrice {
 	changeOverTime?: number;
 	changePercent?: number;
 	close?: number;
-	date?: string; //yyyy-mm-dd
+	date?: string;
 	volume?: number;
 }
