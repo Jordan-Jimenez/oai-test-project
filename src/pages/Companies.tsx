@@ -29,9 +29,9 @@ const CompaniesPage = React.memo(() => {
 		<>
 			{isLoading
 				? [...Array(10)].map(() => <CompanyMarketSummary loading={isLoading} />)
-				: companies
-						?.slice(0, 2)
-						.map((q) => <CompanyMarketSummary key={q.symbol} quote={q} />)}
+				: companies?.map((q) => (
+						<CompanyMarketSummary key={q.symbol} quote={q} />
+				  ))}
 		</>
 	);
 });
